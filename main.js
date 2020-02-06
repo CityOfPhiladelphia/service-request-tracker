@@ -1,5 +1,6 @@
 (function ($, _) {
-  var endpoint = 'https://api.phila.gov/open311/v2/'
+  var endpoint = 'https://phl.carto.com/api/v2/sql/'
+  var table = 'public_cases_fc'
   var params = qs(window.location.search.substr(1))
   // Use mustache.js style brackets in templates
   _.templateSettings = { interpolate: /\{\{(.+?)\}\}/g }
@@ -12,14 +13,14 @@
 
   if (params.id) {
     resultContainer.html(templates.loading)
-    var queryUrl = constructQueryUrl(params.id)
-    $.getJSON(queryUrl, function (response) {
-      if (response.length < 1 || response[0].errors) {
+    var query = constructQuery(params.id)
+    $.getJSON(endpoint, { q: query }, function (response) {
+      if (response.rows.length < 1) {
         // If there's no response or if there's an error, indicate such
         resultContainer.html(templates.error({ service_request_id: params.id }))
       } else {
         // Otherwise display the result
-        var request = response[0]
+        var request = response.rows[0]
         resultContainer.html(templates.result(request))
       }
     }).fail(function () {
@@ -27,8 +28,8 @@
     })
   }
 
-  function constructQueryUrl (id) {
-    return endpoint + 'requests/' + params.id + '.json'
+  function constructQuery (id) {
+    return "select * from " + table + " where service_request_id = '" + params.id + "'"
   }
 
   // decode a uri into a kv representation :: str -> obj
